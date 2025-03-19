@@ -11,8 +11,9 @@ def show_homepage():
     print("3. Withdraw Money")
     print("4. Transfer Funds")
     print("5. View Transaction History")
-    print("6. Loan Payment")
-    print("7. Exit System\n")
+    print("6. View Loans")
+    print("7. Loan Payment")
+    print("8. Exit System\n")
 
 # DISPLAY THE CUSTOMERS ACCOUNTS
 def view_accounts(connection, customer_id):
@@ -187,13 +188,76 @@ def view_transaction_history(connection, customer_id):
     cursor.close()
 
 
+# VIEW LOANS
+def view_loans(connection, customer_id):
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT Loan_ID, Loan_Type, Remaining_Balance, Interest_Rate, End_Date 
+        FROM Loan WHERE Customer_ID = %s AND Status = 'Active'
+        ORDER BY End_Date ASC;
+    """, (customer_id,))
+    
+    loans = cursor.fetchall()
+
+    if not loans:
+        print("No active loans found.\n")
+        return
+
+    print("\n--- Active Loans ---")
+    for loan in loans:
+        print(f"Loan ID: {loan[0]}, Type: {loan[1]}, Balance: ${loan[2]:.2f}, Interest: {loan[3]}%, Due: {loan[4]}")
+    
+    cursor.close()
+
+
 # LOAN PAYMENTS
+def loan_payment(connection, customer_id):
+    cursor = connection.cursor()
 
+    # Check if the customer has any active loans
+    cursor.execute("""
+        SELECT COUNT(*) FROM Loan WHERE Customer_ID = %s AND Status = 'Active';
+    """, (customer_id,))
+    
+    active_loans = cursor.fetchone()[0]
+    
+    # if no active loans exit
+    if active_loans == 0:
+        print("\nYou have no active loans to pay.")
+        cursor.close()
+        return  
 
+    # if loans exist display them
+    view_loans(connection, customer_id)
 
+    loan_id = input("Enter Loan ID to make a payment: ")
+    amount = float(input("Enter payment amount: "))
 
+    # Subtract payment from the remaining balance
+    cursor.execute("""
+        UPDATE Loan
+        SET Remaining_Balance = Remaining_Balance - %s
+        WHERE Loan_ID = %s AND Customer_ID = %s AND Status = 'Active';
+    """, (amount, loan_id, customer_id))
 
+    connection.commit()
 
+    # Check if the loan is fully paid
+    cursor.execute("SELECT Remaining_Balance FROM Loan WHERE Loan_ID = %s", (loan_id,))
+    remaining_balance = cursor.fetchone()[0]
+
+    if remaining_balance <= 0:
+        cursor.execute("""
+            UPDATE Loan
+            SET Status = 'Paid'
+            WHERE Loan_ID = %s;
+        """, (loan_id,))
+        print("\nLoan fully paid off!")
+
+    connection.commit()
+    cursor.close()
+    
+    print("Loan payment processed successfully!\n")
 
 
 

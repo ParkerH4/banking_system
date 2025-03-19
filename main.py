@@ -4,6 +4,8 @@ from bankingfunctions import deposit_money
 from bankingfunctions import withdraw_money
 from bankingfunctions import transfer_funds
 from bankingfunctions import view_transaction_history
+from bankingfunctions import view_loans
+from bankingfunctions import loan_payment
 from bankingfunctions import exit_program
 from database import connect_to_db
 
@@ -63,8 +65,10 @@ def main():
         elif choice == '5':
             view_transaction_history(db_connection, customer_id)
         elif choice == '6':
-            loan_payment(db_connection, customer_id)
+            view_loans(db_connection, customer_id)
         elif choice == '7':
+            loan_payment(db_connection, customer_id)
+        elif choice == '8':
             exit_program(db_connection, first_name, last_name)
         else:
             print("Invalid option. Please try again.\n")
