@@ -1,5 +1,7 @@
 import mysql.connector
 from database import connect_to_db
+from transactionLinkedList import TransactionLinkedList
+from LoanPriorityQueue import LoanPriorityQueue
 
 db_connection = connect_to_db()
 # fix lines 151 - 160 giving duplicate values in table 
@@ -167,51 +169,80 @@ def transfer_funds(connection, customer_id):
     cursor.close()
 
 # VIEW TRANSACTION HISTORY FUNCTION
+
+# Initialize linked list at the start
+transaction_history = TransactionLinkedList()
+
 def view_transaction_history(connection, customer_id):
     cursor = connection.cursor()
+
+    global transaction_list
+    transaction_list = TransactionLinkedList()  # Reset the linked list
+
     cursor.execute("""
-        SELECT T.Transaction_Type, A.Account_Type, T.Amount, T.Transaction_Date
+        SELECT T.Transaction_ID, T.Transaction_Type, A.Account_Type, T.Amount, T.Transaction_Date
         FROM Transaction T
         JOIN Account A ON T.Account_ID = A.Account_ID
         WHERE A.Customer_ID = %s
-        ORDER BY T.Transaction_Date DESC LIMIT 5;
+        ORDER BY T.Transaction_Date DESC;
     """, (customer_id,))
     
     transactions = cursor.fetchall()
+
+    # Linked List
     if transactions:
         print("\n--- Transaction History ---")
         for transaction in transactions:
-            print(f"Type: {transaction[0]}, Account Type: {transaction[1]}, Amount: ${transaction[2]:.2f}, Date: {transaction[3]}")
+            transaction_list.add_transaction(
+                transaction[0],  # Transaction_ID
+                transaction[1],  # Transaction_Type
+                transaction[2],  # Account_Type
+                transaction[3],  # Amount
+                transaction[4]   # Transaction_Date
+            )
+        print(transaction_list.display_transactions())  # Display linked list
     else:
         print("No transaction history found.\n")
-    
+
     cursor.close()
+
+
+# Initialize the priority queue at the start
+loan_queue = LoanPriorityQueue()
 
 
 # VIEW LOANS
 def view_loans(connection, customer_id):
+    global loan_queue  # setup global queue
+    loan_queue = LoanPriorityQueue()  # Reset queue before adding new loans
+
     cursor = connection.cursor()
     cursor.execute("""
-        SELECT Loan_ID, Loan_Type, Remaining_Balance, Interest_Rate, End_Date 
+        SELECT Loan_ID, Loan_Type, Remaining_Balance, End_Date
         FROM Loan WHERE Customer_ID = %s AND Status = 'Active'
         ORDER BY End_Date ASC;
     """, (customer_id,))
-    
-    loans = cursor.fetchall()
 
+    loans = cursor.fetchall()
+    
     if not loans:
         print("No active loans found.\n")
         return
 
-    print("\n--- Active Loans ---")
+    # Min Heap 
+    print("\n--- Active Loans (Prioritized by Due Date) ---")
     for loan in loans:
-        print(f"Loan ID: {loan[0]}, Type: {loan[1]}, Balance: ${loan[2]:.2f}, Interest: {loan[3]}%, Due: {loan[4]}")
-    
+        # Insert loans into priority queue (earliest due date gets highest priority)
+        loan_queue.add_loan(loan[0], loan[1], loan[2], loan[3])
+
+    print(loan_queue.display_loans())  # Display loans from the heap
+
     cursor.close()
 
 
 # LOAN PAYMENTS
 def loan_payment(connection, customer_id):
+    global loan_queue  # setup global queue
     cursor = connection.cursor()
 
     # Check if the customer has any active loans
@@ -221,14 +252,15 @@ def loan_payment(connection, customer_id):
     
     active_loans = cursor.fetchone()[0]
     
-    # if no active loans exit
     if active_loans == 0:
         print("\nYou have no active loans to pay.")
         cursor.close()
         return  
 
-    # if loans exist display them
-    view_loans(connection, customer_id)
+    # Use heap to find the most urgent loan to pay (soonest due date)
+    print("\n--- Priority Loan Payment ---")
+    print("The system recommends paying the following loan first:\n")
+    print(loan_queue.process_next_loan())  # Pops the highest priority loan
 
     loan_id = input("Enter Loan ID to make a payment: ")
     amount = float(input("Enter payment amount: "))
@@ -255,10 +287,25 @@ def loan_payment(connection, customer_id):
         print("\nLoan fully paid off!")
 
     connection.commit()
+
+    # Add new loan payments to the transaction history
+    cursor.execute("""
+        INSERT INTO Transaction (Account_ID, Loan_ID, Transaction_Type, Amount, Transaction_Date)
+        SELECT A.Account_ID, L.Loan_ID, 'Loan Payment', %s, NOW()
+        FROM Account A
+        JOIN Loan L ON A.Customer_ID = L.Customer_ID
+        WHERE L.Loan_ID = %s AND L.Customer_ID = %s
+        LIMIT 1;
+    """, (amount, loan_id, customer_id))
+    
+    connection.commit()
+    
     cursor.close()
     
     print("Loan payment processed successfully!\n")
 
+    # REBUILD the loan queue so it doesn't keep outdated loans
+    view_loans(connection, customer_id)
 
 
 # EXIT PROGRAM

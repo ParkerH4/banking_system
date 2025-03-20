@@ -52,7 +52,7 @@ def main():
         show_homepage()
         print("\nPlease select an option from the menu below:\n")
         # User input
-        choice = input("Please Enter an option from the menu (1-7): ")
+        choice = input("Please Enter an option from the menu (1-8): ")
 
         if choice == '1':
             view_accounts(db_connection, customer_id)

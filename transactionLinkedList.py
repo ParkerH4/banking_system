@@ -42,8 +42,12 @@ class TransactionLinkedList:
     # Displays all transactions in the linked lsit
     def display_transactions(self):
         current = self.head
+        if not current:
+            return "No transactions available."
+        
         transactions = []
         while current:
-            transactions.append(str(current))
+            transactions.append(f" Time: {current.Date_Time} | Account:  {current.Transaction_Type} | Action: {current.Account_ID} | Amount: ${current.Amount:.2f}")
             current = current.next
-        return " -> ".join(transactions) if transactions else "No transactions available."
+
+        return "\n".join(transactions)
