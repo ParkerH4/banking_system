@@ -4,7 +4,7 @@ from transactionLinkedList import TransactionLinkedList
 from LoanPriorityQueue import LoanPriorityQueue
 
 db_connection = connect_to_db()
-# fix lines 151 - 160 giving duplicate values in table 
+
 # HOMEPAGE
 def show_homepage():
     print("\n--- Home Page ---")
