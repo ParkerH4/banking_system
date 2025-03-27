@@ -15,7 +15,8 @@ def show_homepage():
     print("5. View Transaction History")
     print("6. View Loans")
     print("7. Loan Payment")
-    print("8. Exit System\n")
+    print("8. Close Account")
+    print("9. Exit System\n")
 
 # DISPLAY THE CUSTOMERS ACCOUNTS
 def view_accounts(connection, customer_id):
@@ -306,6 +307,36 @@ def loan_payment(connection, customer_id):
 
     # REBUILD the loan queue so it doesn't keep outdated loans
     view_loans(connection, customer_id)
+
+    # Close Acccount
+def close_account(connection, customer_id):
+    account_type = input("Enter the account to close (Chequing/Savings/TFSA/RRSP): ")
+
+    cursor = connection.cursor()
+
+    # Check if account exists
+    cursor.execute("""
+        SELECT * FROM Account 
+        WHERE Customer_ID = %s AND Account_Type = %s;
+    """, (customer_id, account_type))
+
+    account = cursor.fetchone()
+
+    if not account:
+        print("No such account found.\n")
+        cursor.close()
+        return
+
+    # Delete account
+    cursor.execute("""
+        DELETE FROM Account 
+        WHERE Customer_ID = %s AND Account_Type = %s;
+    """, (customer_id, account_type))
+
+    connection.commit()
+    cursor.close()
+
+    print(f"{account_type} account closed successfully.\n")
 
 
 # EXIT PROGRAM
