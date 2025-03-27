@@ -50,9 +50,9 @@ A command-line based banking system that simulates real-world banking operations
 
 ## File Overview
 
-main.py - Main menu and app entry point                
-bankingfunctions.py - Core banking operations
-database.py - DB connection logic
-LoanPriorityQueue.py - Min-heap for loan prioritization 
-transactionLinkedList.py - Linked list for transactions
+-  main.py - Main menu and app entry point                
+- bankingfunctions.py - Core banking operations
+- database.py - DB connection logic
+- LoanPriorityQueue.py - Min-heap for loan prioritization 
+- transactionLinkedList.py - Linked list for transactions
 
