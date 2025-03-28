@@ -1,6 +1,3 @@
-from accountLinkedList import AccountLinkedList
-from loanLinkedList import LoanLinkedList
-
 class Customer:
     def __init__(self, Customer_ID, FName, LName, Email, Phone, Address, Date_Of_Birth):
         self.Customer_ID = Customer_ID
@@ -10,8 +7,6 @@ class Customer:
         self.Phone = Phone
         self.Address = Address
         self.Date_Of_Birth = Date_Of_Birth
-        self.accounts = AccountLinkedList()
-        self.loans = LoanLinkedList()
 
     def __repr__(self):
         return f"Customer({self.Customer_ID}, {self.FName}, {self.LName})"
