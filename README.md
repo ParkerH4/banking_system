@@ -56,5 +56,5 @@ A command-line based banking system that simulates real-world banking operations
 - LoanPriorityQueue.py - Min-heap for loan prioritization 
 - transactionLinkedList.py - Linked list for transactions
 
-## Runnig Tests
+## Running Tests
 python -m unittest discover tests/
